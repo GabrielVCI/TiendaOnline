@@ -30,11 +30,13 @@ body {
 }
 
 .prod-listado-container {
+    margin-top: 40px;
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: start;
     height: 1000px;
+
 }
 
 .prod-listado {

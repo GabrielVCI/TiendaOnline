@@ -1,0 +1,245 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+
+ 
+<div class="" id="filtroProducto">
+
+    <form data-bind="submit: manejarFiltroProducto">
+   <input class="form-control" placeholder="Ingresa el id de un producto" data-bind="value: id"></input>
+    <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+</div>
+<div class="prod-container">
+
+    <button class="btn btn-primary" onclick="AgregarProducto()" style="width: 18rem;">Agregar Producto</button>
+    <button class="btn btn-secondary" onclick="ObtenerProductos()" style="width: 18rem;">Cargar Productos</button>
+
+    <div class="prod-listado-container" id="listado-productos-contenedor">
+          
+        <div class="prod-listado" data-bind="foreach: productos">
+
+            <div class="card" style="width: 18rem; height: 200px;">
+                <div class="card-header">
+                    Producto
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><span data-bind="text: id"></span></li>
+                    <li class="list-group-item"><span data-bind="text: nombre"></span></li>
+                    <li class="list-group-item"><span data-bind="text: precio"></span></li>
+                    <li class="list-group-item"><span data-bind="text: fechaCreacion"></span></li>
+                   
+                </ul>
+
+                <button class="btn btn-primary" data-bind="click: obtenerProductoAEditar">Editar</button>
+                <button class="btn btn-danger" data-bind="click:confimarEliminacionProducto">Eliminar</button>
+            </div>
+
+
+            <div class="form-container" data-bind="visible: esNuevo">
+                <div class="hidden" id="overlay" data-bind="visible: esNuevo"></div>
+
+                <section id="modal-jugador">
+                    <div class="flex">
+                        <h3 class="fw-bold">Agrega un producto</h3>
+                        <button class="btn btn-close" data-bind="click: focusOutProductos"></button>
+                    </div>
+
+                    <form data-bind="submit: manejarSubmitProducto">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-4">
+                                    <label for="NombreProd" class="form-label">Nombre del producto</label>
+                                    <input type="text"
+                                           data-bind="value: nombre"
+                                           class="form-control"
+                                           id="NombreProd">
+                                    <div class="error error-producto text-danger" data-bind="validationMessage: nombre"></div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="precio" class="form-label">Precio</label>
+                                    <input type="number"
+                                           data-bind="value: precio"
+                                           class="form-control"
+                                           id="precio">
+                                    <div class="error error-producto text-danger" data-bind="validationMessage: precio"></div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="fecha" class="form-label">Fecha de Creación</label>
+                                    <input type="date"
+                                           data-bind="value: fechaCreacion"
+                                           class="form-control"
+                                           id="fecha">
+                                    <div class="error error-producto text-danger" data-bind="validationMessage: fechaCreacion"></div>
+                                </div>
+                                 
+                            </div>
+                        </div>
+
+                        <div class="form-agregar-producto">
+                            <button class="btn btn-primary" type="submit">
+                                Guardar Producto
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<partial name="_ModalEditarProducto" />
+
+@section Scripts{
+     
+    <script src="~/js/utilidades.js"></script>
+
+    <script>
+
+        //Validaciones para los campos vacios y los mensajes de error
+        ko.validation.init({
+            insertMessages: false,  // Avoid inserting automatic messages
+            decorateInputElement: true,
+            errorElementClass: 'error'
+        }, true);
+
+        const urlProductos = "https://localhost:7208/api/Productos";
+
+
+
+        const modalEditarProducto = document.getElementById('editar-producto');
+        const modalEditarProductoBTSP = new bootstrap.Modal(modalEditarProducto);
+
+        function FiltroProductoViewModelFN() {
+
+            let self = this;
+
+            self.id = ko.observable();
+
+            self.manejarFiltroProducto = async function() {
+
+                ObtenerProductoPorIdFiltro(self.id());
+                console.log(self.id())
+            }
+        }
+
+        function ListadoProductosViewModel() {
+
+            let self = this;
+
+            self.productos = ko.observableArray([]);
+            self.cargando = ko.observable(true);
+            self.noHayProductos = ko.pureComputed(function () {
+                if (self.cargando()) {
+                    return false;
+                }
+
+                return self.productos().length === 0;
+            });
+        }
+
+        function elementoListadoProductosVM({ id, nombre, precio, fechaCreacion }) {
+
+            let self = this;
+
+            self.id = ko.observable(id);
+
+            self.nombre = ko.observable(nombre).extend({ 
+                required: { 
+                    message: "Este campo es requerido" 
+                } 
+            });
+
+            self.precio = ko.observable(precio).extend({
+                required: {
+                    message: "Este campo es requerido"
+                }
+            });
+              
+            self.fechaCreacion = ko.observable(fechaCreacion).extend({
+                required: {
+                    message: "Este campo es requerido"
+                }
+            });
+              
+            self.esNuevo = ko.pureComputed(function () {
+                return self.id() == 0;
+            });
+
+            self.manejarSubmitProducto = function () {
+
+                let errors = ko.validation.group(self);
+
+                if(errors().length > 0){
+                    errors.showAllMessages();
+                    return;
+                }
+
+                const producto = {
+                    id: self.id,
+                    nombre: self.nombre,
+                    precio: self.precio,
+                    fechaCreacion: self.fechaCreacion,
+                   
+                }
+
+                enviarProducto(producto);
+            }
+
+        }
+
+        const productoEditarViewModel = {
+
+            id: 0,
+            nombre: ko.observable().extend({
+                required: {
+                    message: "Este campo es requerido"
+                }
+            }),
+            precio: ko.observable().extend({
+                required: {
+                    message: "Este campo es requerido"
+                }
+            }),
+            fechaCreacion: ko.observable().extend({
+                required: {
+                    message: "Este campo es requerido"
+                }
+            }),
+   
+
+            manejarSubmitEditarProducto: async function () {
+
+                let errors = ko.validation.group(this);
+
+                if (errors().length > 0) {
+                    errors.showAllMessages();
+                    return;
+                }
+
+                const producto = {
+                    id: this.id,
+                    nombre: this.nombre,
+                    precio: this.precio,
+                    fechaCreacion: this.fechaCreacion,
+                   
+                }
+
+                editarProducto(producto);
+            }
+        }
+
+        const productosListadoViewModel = new ListadoProductosViewModel();
+        const filtroProductosViewModel = new FiltroProductoViewModelFN();
+         
+        ObtenerProductos();
+        ko.applyBindings(productosListadoViewModel, document.getElementById("listado-productos-contenedor"));
+        ko.applyBindings(productoEditarViewModel, document.getElementById("editar-producto"));
+        ko.applyBindings(filtroProductosViewModel, document.getElementById("filtroProducto"));
+    </script>
+
+}

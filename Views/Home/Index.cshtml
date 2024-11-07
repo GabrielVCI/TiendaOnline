@@ -2,9 +2,6 @@
     ViewData["Title"] = "Home Page";
 }
 
-@{
-    ViewData["Title"] = "Home Page";
-}
 
  
 <div class="" id="filtroProducto">
@@ -17,6 +14,7 @@
 <div class="prod-container">
 
     <button class="btn btn-primary" onclick="AgregarProducto()" style="width: 18rem;">Agregar Producto</button>
+    <button class="btn btn-secondary" onclick="ObtenerProductos()" style="width: 18rem;">Cargar Productos</button>
 
     <div class="prod-listado-container" id="listado-productos-contenedor">
           
@@ -61,11 +59,11 @@
                                 </div>
 
                                 <div class="mb-4">
-                                    <label for="ApellidoJugador" class="form-label">Precio</label>
+                                    <label for="precio" class="form-label">Precio</label>
                                     <input type="number"
                                            data-bind="value: precio"
                                            class="form-control"
-                                           id="ApellidoJugador">
+                                           id="precio">
                                     <div class="error error-producto text-danger" data-bind="validationMessage: precio"></div>
                                 </div>
 
@@ -109,7 +107,9 @@
             errorElementClass: 'error'
         }, true);
 
-        const urlJugadores = "https://localhost:7208/api/Productos";
+        const urlProductos = "https://localhost:7208/api/Productos";
+
+
 
         const modalEditarProducto = document.getElementById('editar-producto');
         const modalEditarProductoBTSP = new bootstrap.Modal(modalEditarProducto);
@@ -123,7 +123,7 @@
             self.manejarFiltroProducto = async function() {
 
                 ObtenerProductoPorIdFiltro(self.id());
-
+                console.log(self.id())
             }
         }
 
@@ -159,15 +159,13 @@
                     message: "Este campo es requerido"
                 }
             });
-
+              
             self.fechaCreacion = ko.observable(fechaCreacion).extend({
                 required: {
                     message: "Este campo es requerido"
                 }
             });
-
-   
-            
+              
             self.esNuevo = ko.pureComputed(function () {
                 return self.id() == 0;
             });
@@ -189,7 +187,7 @@
                    
                 }
 
-                enviarProducto(jugador);
+                enviarProducto(producto);
             }
 
         }
@@ -238,7 +236,7 @@
         const productosListadoViewModel = new ListadoProductosViewModel();
         const filtroProductosViewModel = new FiltroProductoViewModelFN();
          
-        ObtenerJugadores();
+        ObtenerProductos();
         ko.applyBindings(productosListadoViewModel, document.getElementById("listado-productos-contenedor"));
         ko.applyBindings(productoEditarViewModel, document.getElementById("editar-producto"));
         ko.applyBindings(filtroProductosViewModel, document.getElementById("filtroProducto"));
